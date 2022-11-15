@@ -6,8 +6,8 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 
 @Component
-class SimpleTask(@Value("\${server.port}") private val port: String) {
+class JobWithScheduledAnnotation(@Value("\${server.port}") private val port: String) {
 
     @Scheduled(fixedRate = 5_000)
-    fun portAndTime() = println("######## Running on port: $port at ${Instant.now()}")
+    fun portAndTime() = println("######## ${this.javaClass.name} Running on port: $port at ${Instant.now()}")
 }
