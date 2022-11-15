@@ -10,5 +10,5 @@ import java.time.Instant
 class JobWithQuartzJobBean(@Value("\${server.port}") private val port: String) : QuartzJobBean() {
 
     override fun executeInternal(context: JobExecutionContext) =
-        println("######## ${this.javaClass.name} Running on port: $port at ${Instant.now()}")
+        println("######## QUARTZ JOB BEAN: Running on port: $port at ${Instant.now()}")
 }
