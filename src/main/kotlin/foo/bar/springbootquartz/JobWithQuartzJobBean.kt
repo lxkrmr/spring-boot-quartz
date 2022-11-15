@@ -1,11 +1,13 @@
 package foo.bar.springbootquartz
 
+import org.quartz.DisallowConcurrentExecution
 import org.quartz.JobExecutionContext
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.quartz.QuartzJobBean
 import org.springframework.stereotype.Component
 import java.time.Instant
 
+@DisallowConcurrentExecution
 @Component
 class JobWithQuartzJobBean(@Value("\${server.port}") private val port: String) : QuartzJobBean() {
 
