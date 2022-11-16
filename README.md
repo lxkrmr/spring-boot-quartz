@@ -24,21 +24,21 @@ And the actuator should provide metrics regarding quartz, e.g.
 ## What we needed
 
 In K8s we have multiple instances of our application.
-Besides, of handling requests we also have the use-case of executing e.g. e clean up job every <foo> seconds.
+Besides, of handling requests we also have the use-case of executing a cleanup job every <foo> seconds.
 But this job should only run on one instance at the time, so we needed something which can elect a leader which is
 performing the job and makes sure that in case of an error another instance becomes the leader and will continue / restart
 the job.
 
 And we thought [Quartz](http://www.quartz-scheduler.org/) is the right choice.
-And as we are using Spring Boot we decided to pick the [spring-boot-starter-quartz](https://docs.spring.io/spring-boot/docs/2.7.x/reference/html/io.html#io.quartz).
+And as we are using Spring Boot, so we decided to pick the [spring-boot-starter-quartz](https://docs.spring.io/spring-boot/docs/2.7.x/reference/html/io.html#io.quartz).
 
-## Why we learned that we don't want to use Quartz
+## Why we don't want to use Quartz
 
 ### Information are confusing / misleading
 
-Important: Here I would like to point out that this topic became valid because of the `spring-boot-starter-quartz`
+**! Important**: Here I would like to point out that this topic became valid because of the `spring-boot-starter-quartz`
 
-We are normal developers, so start to google stuff, and we found the following sources which did not always helped.
+We are normal developers, so we are googling stuff, and we found the following sources which did not always helped.
 
 [Baeldung](https://www.baeldung.com/spring-quartz-schedule) is known by many developers and next to Stackoverflow maybe
 one of the most often used sources - at least for me. 
@@ -57,7 +57,7 @@ public JobDetail jobDetail() {
 }
 ```
 
-And then Spring offer another way to do **the same thing**:
+And then Spring offers another way to do **the same thing**:
 
 ```Java
 @Bean
@@ -70,9 +70,10 @@ public JobDetailFactoryBean jobDetail() {
 }
 ```
 
-**So as soon you try to google something, you get mixed up in all this different ways of doing the same thing. And from time to time you see that your way is not offering this details you would like to use ;(**
+**So as soon you try to google something, you get mixed up in all this different ways of doing the same thing.
+And from time to time you see that your way is not offering this details you would like to use (out of the box) ;(**
 
-Plus some Information just did not work for us, like this
+Plus some Information just did not work for us, like this:
 
 ```Java
 @Configuration
@@ -103,21 +104,16 @@ Other sources we found and tried to use:
 * [Scheduling in Spring with Quartz](https://www.baeldung.com/spring-quartz-schedule)
 * [Quartz Tutorials](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/)
 
-In the end this discussion on github helped us to realize that Spring Boot is already doing the needed config and we should not mess with it:
+In the end this discussion on Github helped us to realize that Spring Boot is already doing the needed config and we should not mess with it:
 
 https://github.com/spring-projects/spring-framework/issues/27709
-
-* using the Scheduler annotation works, but no jobs appearing in the DB
-* by default quartz does not start in cluster mode, so multiple instances will run the scheduled task which is not wanted
 
 ### Additional pitfalls
 
 1. Non concurrency is defined with the annotation `@DisallowConcurrentExecution`
 
-As mentioned under `What we needed` we wanted to use Quartz to ensure that one Job is only executed once at a time on
+As mentioned under `What we needed`, we wanted to use Quartz to ensure that one Job is only executed once at a time on
 one instance. To achieve this behavior one has to use the `@DisallowConcurrentExecution` annotation on the job like this.
-
-**! Important**: If you forget the annotation each instance will execute the job!
 
 ```Kotlin
 @DisallowConcurrentExecution
@@ -128,6 +124,8 @@ class JobWithQuartzJobBean(@Value("\${server.port}") private val port: String) :
         println("######## QUARTZ JOB BEAN: Running on port: $port at ${Instant.now()}")
 }
 ```
+
+**! Important**: If you forget the annotation each instance will execute the job!
 
 Sadly this does not align with the way one has / can define the `JobDetails` and `Trigger`
 
@@ -174,9 +172,10 @@ scheduler.addJob(job1, true);
 
 The problem is, that with Spring Boot we don't configure the `scheduler` directly.
 This happens with Spring Magic in the background.
-So of course we could write logic to solve the issue, but it is cumbersome, and it felt strange to us to do an update this explicit.
-E.g. should we do two deployments then? One containing the logic to update the job and then another one where this code can be replaced,
-to keep the code base clean?
+So of course we could write logic to solve the issue, but it is cumbersome,
+and it felt strange to us to do an update this explicit.
+E.g. should we do two deployments then? One containing the logic to update the job and then another one where this
+code can be removed (again), to keep the code base clean?
 
 AND we had some unwanted side effects when messing around with the Job.
 Somehow the job was triggered twice on an instance or multiple instances started the 
@@ -185,7 +184,7 @@ job and did not care anymore about the `DisallowConcurrentExecution` annotation.
 FYI: We recommend to stay away from the following config, as it messed up our jobs:
 
 ```
-spring.quartz.overwrite-existing-jobs = true
+spring.quartz.overwrite-existing-jobs=true
 ```
 
 3. @Scheduled annotation does not work as expected
@@ -196,6 +195,5 @@ But this Job did not appear in the Quartz tables and therefor was not managed to
 ## Summary
 
 We decided to **not** use Quartz, as it introduced more complexity and did not reliably solve our problem.
-Instead, we will use K8s to deploy a dedicated Pod using a `basic`` Spring Scheduler.
+Instead, we will use K8s to deploy a dedicated Pod using a `basic Spring Scheduler`.
 Not the best solution, but at least we don't have to wonder about issues in Quartz.
-
